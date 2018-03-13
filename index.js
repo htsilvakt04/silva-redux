@@ -1,67 +1,70 @@
+// create store
+    // state tree, getState, listen To any Changes in state, Update state (dispatch)
+
+
+
+// create a reducer
+    // return a "next state" base on the action type
+
 let addAction = {
     type: 'ADD_TODO',
-    todo: {
-        id: 1,
-        name: 'Learn more than Redux',
-        complete: false
+    body: {
+        title: 'finish Mongo db',
+        completed: false
     }
 };
 
-let removeAction = {
-    type: 'REMOVE_TODO',
-    id: 2
-};
-
-let toggleAction = {
-    type: 'TOGGLE_TODO',
-    id: 3
-};
-
-// be responsible for returning the "Next state" of our app after a particular event happened
-function todos (currentState = [], action) {
+function reducer (currentState = [], action) {
     if (action.type === 'ADD_TODO') {
-        return currentState.concat([action.todo]);
+        return currentState.concat([action.body]);
     }
-
     return currentState;
 }
 
 
-function createStore (reducer) {
+function createStore(reducer) {
     let state;
     let listeners = [];
 
     const getState = () => state;
 
-    const subscribe = (listenerCallback) => {
-        // push the callback to listeners array (tract how many subscribe functions has being triggered)
-        listeners.push(listenerCallback);
+    const subscribe = (callback) => {
+        listeners.push(callback);
 
         return () => {
-            listeners = listeners.filter( item => {
-                return item !== listenerCallback;
-            })
-        };
+            listeners = listeners.filter(item => item !== callback); 
+        }
     };
-
-    let dispatch = (action) => {
-        // call reducer
-        state = reducer(state, action);
-        // invoke listener function
+    
+    const dispatch = (action) => {
+        // set new state
+        state = reducer(getState(), action);
+        // trigger callback function for each listener
         listeners.forEach(listener => listener(state));
-        // return new State || null
-
+        // return newState for any purpose
+        return state;
     };
+
     return {
-        getState,
         subscribe,
-        dispatch
+        dispatch,
+        getState
     }
 }
 
-// new file
-let store = createStore(todos);
 
 
+/// API for user
+
+const store = createStore(reducer);
+
+let unSubscribe =  store.subscribe((newState) => {
+    console.log('the new state is: ' + JSON.stringify( newState) );
+});
+
+const result = store.dispatch(addAction);
+
+
+// the console.log function above will automatically being trigged when any state changed.
 
 
