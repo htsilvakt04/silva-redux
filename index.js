@@ -18,23 +18,16 @@ let toggleAction = {
 };
 
 // be responsible for returning the "Next state" of our app after a particular event happened
-function reducer (currentState = [], action) {
+function todos (currentState = [], action) {
     if (action.type === 'ADD_TODO') {
         return currentState.concat([action.todo]);
     }
-    // switch (action.type) {
-    //     case 'ADD_TODO':
-    //         return currentState.concat([action.todo]);
-    //     case 'REMOVE_TODO':
-    //         // remove todo
-    //     default:
-    //         return currentState;
-    // }
+
     return currentState;
 }
 
 
-function createStore () {
+function createStore (reducer) {
     let state;
     let listeners = [];
 
@@ -67,22 +60,7 @@ function createStore () {
 }
 
 // new file
-let store = createStore();
-
-let subscriber = store.subscribe((newState) => {
-    console.log('new state is ' + JSON.stringify( newState));
-});
-// get this from database or from user input form
-
-
-let result = store.dispatch({
-    type: 'ADD_TODO',
-    todo: {
-        id: 1,
-        name: 'Learn more than Redux',
-        complete: false
-    }
-});
+let store = createStore(todos);
 
 
 
