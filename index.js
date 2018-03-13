@@ -1,24 +1,20 @@
-// create store
-    // state tree, getState, listen To any Changes in state, Update state (dispatch)
-
-
-
-// create a reducer
-    // return a "next state" base on the action type
-
-let addAction = {
-    type: 'ADD_TODO',
-    body: {
-        title: 'finish Mongo db',
-        completed: false
-    }
-};
-
 function reducer (currentState = [], action) {
-    if (action.type === 'ADD_TODO') {
-        return currentState.concat([action.body]);
+    switch (action.type) {
+        case 'ADD_TODO':
+            return currentState.concat([action.body]);
+        case 'REMOVE_TODO':
+            return currentState.filter(todo => todo.id !== action.id);
+        case 'TOGGLE_TODO':
+            return currentState.map(todo => {
+                if (todo.id === action.id) {
+                    return Object.assign({}, todo, {completed: !todo.completed});
+                }
+                return todo;
+            });
+        default:
+            return currentState;
     }
-    return currentState;
+
 }
 
 
@@ -61,9 +57,21 @@ const store = createStore(reducer);
 let unSubscribe =  store.subscribe((newState) => {
     console.log('the new state is: ' + JSON.stringify( newState) );
 });
-
+let addAction = {
+    type: 'ADD_TODO',
+    body: {
+        id: 1,
+        title: 'finish drinking another Pepsi bottle',
+        completed: false
+    }
+};
 const result = store.dispatch(addAction);
 
+
+let test = {
+    type: 'REMOVE_TODO',
+    id: 1
+}
 
 // the console.log function above will automatically being trigged when any state changed.
 
