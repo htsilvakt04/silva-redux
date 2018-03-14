@@ -46,17 +46,9 @@ function createStore(reducers) {
     
     const getState = () => state;
 
-                    // store.subscribe(function (state) {
-                    //     console.log('new state is ' + JSON.stringify(state));
-                    // });
-
-                    // store.subscribe((state) => {
-                    //     console.log('new state is ' + JSON.stringify(state));
-                    // }, 'goalReducer');
-
     const subscribe = (callback, name = null) => {
-        // long API: store.subscribe(callbackName, reducerName)
-        if (name) {
+
+        if (name) { // long API: store.subscribe(callbackName, reducerName)
             // TODO: should me this listener be immute?
             // push callback to a proper reducerName in listeners array
             listeners[name] = listeners[name].concat([callback]);
@@ -66,8 +58,6 @@ function createStore(reducers) {
             }
         }
         // short API: store.subscribe(callbackName) => subscribe for all events happen in all reducers
-
-        // push callback to a proper reducerName in listeners array
         listeners.all = listeners.all.concat([callback]);
         // return a function which when it's being invoked will remove the listener attached
         return () => {
@@ -124,33 +114,33 @@ function createStore(reducers) {
 }
 
 
-var REDUCER_ACTION = {
-    goalReducer: ['ADD_GOAL', 'REMOVE_GOAL'],
-    todoReducer: ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO']
-};
+
 
 /// API for user
 
 const store = createStore([goalReducer, todoReducer]);
 
+var REDUCER_ACTION = {
+    goalReducer: ['ADD_GOAL', 'REMOVE_GOAL'],
+    todoReducer: ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO']
+};
 
-//
 let unSubscribe =  store.subscribe((newState) => {
     console.log('the new state is: ' + JSON.stringify( newState) );
 });
 let anotherUnSubscribe =  store.subscribe((newState) => {
     console.log('the new state com from Goal is -------: ' + JSON.stringify( newState) );
 }, 'goalReducer');
-
-let addAction = {
-    type: 'ADD_TODO',
-    body: {
-        id: 1,
-        title: 'running again',
-        completed: false
-    }
-};
-
-const result = store.dispatch(addAction);
+//
+// let addAction = {
+//     type: 'ADD_TODO',
+//     body: {
+//         id: 1,
+//         title: 'running again',
+//         completed: false
+//     }
+// };
+//
+// const result = store.dispatch(addAction);
 
 
