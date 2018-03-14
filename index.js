@@ -1,4 +1,4 @@
-function reducer (currentState = [], action) {
+function todoReducer (currentState = [], action) {
     switch (action.type) {
         case 'ADD_TODO':
             return currentState.concat([action.body]);
@@ -17,8 +17,19 @@ function reducer (currentState = [], action) {
 
 }
 
+function goalReducer (currentState = [], action) {
+    switch (action.type) {
+        case 'ADD_GOAL':
+            return currentState.concat([action.body]);
+        case 'REMOVE_GOAL':
+            return currentState.filter(goal => goal.id !== action.id);
+        default:
+            return currentState;
+    }
+}
 
-function createStore(reducer) {
+
+function createStore(todoReducer) {
     let state;
     let listeners = [];
 
@@ -34,7 +45,7 @@ function createStore(reducer) {
     
     const dispatch = (action) => {
         // set new state
-        state = reducer(getState(), action);
+        state = todoReducer(getState(), action);
         // trigger callback function for each listener
         listeners.forEach(listener => listener(state));
         // return newState for any purpose
@@ -52,7 +63,7 @@ function createStore(reducer) {
 
 /// API for user
 
-const store = createStore(reducer);
+const store = createStore(todoReducer);
 
 let unSubscribe =  store.subscribe((newState) => {
     console.log('the new state is: ' + JSON.stringify( newState) );
