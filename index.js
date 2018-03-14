@@ -18,6 +18,7 @@ function todoReducer (currentState = [], action) {
 }
 
 function goalReducer (currentState = [], action) {
+;
     switch (action.type) {
         case 'ADD_GOAL':
             return currentState.concat([action.body]);
@@ -29,27 +30,67 @@ function goalReducer (currentState = [], action) {
 }
 
 
-function createStore(todoReducer) {
-    let state;
-    let listeners = [];
+function createStore([goalReducer, todoReducer]) {
+    // check if reducers's not a array then throw err;
+    let state = {};
+    let listeners = {};
 
+    // set up needed condition for each reducer
+    let goalReducerName = goalReducer.name;
+    let todoReducerName = todoReducer.name;
+
+    state[goalReducerName] = [];state[todoReducerName] = [];
+    listeners[goalReducerName] = [];listeners[todoReducerName] = [];
+    
+    // //   //  //  //  //  /   
+    
+    
+    
     const getState = () => state;
 
-    const subscribe = (callback) => {
-        listeners.push(callback);
+    const subscribe = (callback, name = null) => {
+        // check if the name was specified then just let user subscribe to that reducer
+        if (name) {
+            listeners[name].push(callback);
+
+            return () => {
+                listeners[name] = listeners[name].filter(item => item !== callback);
+            }
+        }
+        // else subscribe to all
+        Object.getOwnPropertyNames(listeners).forEach( listener => listeners[listener].push(callback));
 
         return () => {
-            listeners = listeners.filter(item => item !== callback); 
+            listeners = Object.getOwnPropertyNames(listeners).forEach(listener => {
+                listener.filter(item => item !== callback)
+            });
         }
     };
     
-    const dispatch = (action) => {
+    const dispatch = (action, reducer = null) => {
+        // TODO: so funny here
+        if (reducer) {
+            let isGoal = reducer === goalReducerName;
+            // set new state
+            state = isGoal ? goalReducer(state, action) : todoReducer(state, action);
+            // trigger callback function for each listener
+            return listeners[reducer].forEach(listener => listener(state));
+        }
+
         // set new state
-        state = todoReducer(getState(), action);
+        let reducerToUse = determineWhichReducerToUse(action, [goalReducer, todoReducer]);
+        state = reducerToUse(state, action);
         // trigger callback function for each listener
-        listeners.forEach(listener => listener(state));
+        listeners[reducerToUse.name].forEach(listener => listener(state));
         // return newState for any purpose
         return state;
+    };
+    // TODO: funny here
+    const determineWhichReducerToUse = (action, [goalReducer, todoReducer]) => {
+        if (action.type.indexOf('TODO') >= 0) {
+            return todoReducer;
+        }
+        return goalReducer;
     };
 
     return {
@@ -63,26 +104,33 @@ function createStore(todoReducer) {
 
 /// API for user
 
-const store = createStore(todoReducer);
+const store = createStore([goalReducer, todoReducer]);
 
-let unSubscribe =  store.subscribe((newState) => {
-    console.log('the new state is: ' + JSON.stringify( newState) );
+store.subscribe(function (state) {
+    console.log('new state is ' + JSON.stringify(state));
 });
+
+
+//
+// let unSubscribe =  store.subscribe((newState) => {
+//     console.log('the new state is: ' + JSON.stringify( newState) );
+// });
 let addAction = {
-    type: 'ADD_TODO',
+    type: 'ADD_GOAL',
     body: {
         id: 1,
         title: 'finish drinking another Pepsi bottle',
         completed: false
     }
 };
-const result = store.dispatch(addAction);
-
-
-let test = {
-    type: 'REMOVE_TODO',
-    id: 1
-}
+const result = store.dispatch(addAction, 'goalReducer');
+// const anotherResult = store.dispatch(addAction);
+//
+//
+// let test = {
+//     type: 'REMOVE_TODO',
+//     id: 1
+// }
 
 // the console.log function above will automatically being trigged when any state changed.
 
