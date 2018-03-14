@@ -29,45 +29,49 @@ function goalReducer (currentState = [], action) {
     }
 }
 
-const REDUCER_ACTION = {
-    goalReducer: ['ADD_GOAL', 'REMOVE_GOAL'],
-    todoReducer: ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO']
-};
-
-
 function createStore(reducers) {
     // check if reducers's not a array then throw err;
     let state = {};
-    let listeners = {};
-
+    let listeners = {
+        all: []
+    };
     reducers.forEach(reducer => {
        let reducerName = reducer.name;
 
        state[reducerName] = [];
        listeners[reducerName] = [];
     });
-
     // state = {reducerOneName: [], reducerTwoName: [], reducerSomeThingName: []};
     // listeners = {reducerOneName: [], reducerTwoName: [], reducerSomeThingName: []}
     
     const getState = () => state;
 
-    const subscribe = (callback, name = null) => {
-        // check if the name was specified then just let user subscribe to that reducer
-        if (name) {
-            listeners[name].push(callback);
+                    // store.subscribe(function (state) {
+                    //     console.log('new state is ' + JSON.stringify(state));
+                    // });
 
+                    // store.subscribe((state) => {
+                    //     console.log('new state is ' + JSON.stringify(state));
+                    // }, 'goalReducer');
+
+    const subscribe = (callback, name = null) => {
+        // long API: store.subscribe(callbackName, reducerName)
+        if (name) {
+            // TODO: should me this listener be immute?
+            // push callback to a proper reducerName in listeners array
+            listeners[name] = listeners[name].concat([callback]);
+            // return a function which when it's being invoked will remove the listener attached
             return () => {
-                listeners[name] = listeners[name].filter(item => item !== callback);
+                listeners = listeners.filter(listener => listener !== callback);
             }
         }
-        // else subscribe to all
-        Object.getOwnPropertyNames(listeners).forEach( listener => listeners[listener].push(callback));
+        // short API: store.subscribe(callbackName) => subscribe for all events happen in all reducers
 
+        // push callback to a proper reducerName in listeners array
+        listeners.all = listeners.all.concat([callback]);
+        // return a function which when it's being invoked will remove the listener attached
         return () => {
-            listeners = Object.getOwnPropertyNames(listeners).forEach(listener => {
-                listener.filter(item => item !== callback)
-            });
+            listeners.all = listeners.all.filter(listener => listener !== callback)
         }
     };
     // You may want to:  //store.dispatch(addAction) OR store.dispatch(addAction, 'goalReducer');
@@ -86,6 +90,7 @@ function createStore(reducers) {
             state = Object.assign({}, state, diff);
             // invoke each listener
             listeners[reducerName].forEach(listener => listener(state));
+            listeners.all.forEach(listener => listener(state));
             return state;
         }
 
@@ -107,6 +112,8 @@ function createStore(reducers) {
         state = Object.assign({}, state, diff);
         // invoke each listener
         listeners[reducer].forEach(listener => listener(state));
+        // invoke
+        listeners.all.forEach(listener => listener(state));
         return state;
     };
     return {
@@ -117,39 +124,33 @@ function createStore(reducers) {
 }
 
 
+var REDUCER_ACTION = {
+    goalReducer: ['ADD_GOAL', 'REMOVE_GOAL'],
+    todoReducer: ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO']
+};
 
 /// API for user
 
 const store = createStore([goalReducer, todoReducer]);
 
-// store.subscribe(function (state) {
-//     console.log('new state is ' + JSON.stringify(state));
-// });
-
 
 //
-// let unSubscribe =  store.subscribe((newState) => {
-//     console.log('the new state is: ' + JSON.stringify( newState) );
-// });
+let unSubscribe =  store.subscribe((newState) => {
+    console.log('the new state is: ' + JSON.stringify( newState) );
+});
+let anotherUnSubscribe =  store.subscribe((newState) => {
+    console.log('the new state com from Goal is -------: ' + JSON.stringify( newState) );
+}, 'goalReducer');
+
 let addAction = {
     type: 'ADD_TODO',
     body: {
-        id: 0,
+        id: 1,
         title: 'running again',
         completed: false
     }
 };
+
 const result = store.dispatch(addAction);
-
-console.log(result);
-// const anotherResult = store.dispatch(addAction);
-//
-//
-// let test = {
-//     type: 'REMOVE_TODO',
-//     id: 1
-// }
-
-// the console.log function above will automatically being trigged when any state changed.
 
 
