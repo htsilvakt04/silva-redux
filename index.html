@@ -3,8 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <title>Silva-Redux-Todo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
 </head>
 <body>
+    <div>
+        <h1>Todo List ?></h1>
+        <input type="text" id="todo" placeholder="Add Todo">
+        <button id="todoBtn">Add Todo</button>
+        <ul id="todos"></ul>
+    </div>
+    <hr>
+    <div>
+        <h1>Goals ?></h1>
+        <input type="text" id="goal" placeholder="Add Goal">
+        <button id="goalBtn">Add Goal</button>
+        <ul id="goals"></ul>
+    </div>
 
+
+
+<script>
+//    function createStore(reducer) {
+//        let state;
+//        let listeners = [];
+//
+//        const getState = () => state;
+//
+//        const subscribe = (callback) => {
+//            listeners.push(callback);
+//
+//            return () => {
+//                listeners = listeners.filter(item => item !== callback);
+//            }
+//        };
+
+//        const dispatch = (action) => {
+            // set new state
+//            state = reducer(getState(), action);
+            // trigger callback function for each listener
+//            listeners.forEach(listener => listener(state));
+            // return newState for any purpose
+//            return state;
+//        };
+
+//        return {
+//            subscribe,
+//            dispatch,
+//            getState
+//        }
+//    }
+
+    /// API for user
+
+    const [ADD_TODO, REMOVE_TODO, TOGGLE_TODO] = ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO'];
+    const [ADD_GOAL, REMOVE_GOAL] = ['ADD_GOAL', 'REMOVE_GOAL'];
+
+    const TODO = {
+        todoId: 0,
+        add: (title) => {
+            return {
+                type: ADD_TODO,
+                todo: {
+                    id: ++TODO.todoId,
+                    name: title,
+                    complete: false,
+                }
+            }
+        },
+        remove: (id) => {
+            return {
+                type: REMOVE_TODO,
+                id
+            }
+        },
+        toggle: (id) => {
+            return {
+                type: TOGGLE_TODO,
+                id
+            }
+        }
+    };
+    const GOAL = {
+        goalId : 0,
+        add: (title) => {
+            return {
+                type: ADD_GOAL,
+                goal: {
+                    id: ++GOAL.goalId,
+                    name: title
+                }
+            }
+        },
+        remove: (id) => {
+            return {
+                type: REMOVE_GOAL,
+                id
+            }
+        }
+    };
+
+    function todos (currentState = [], action) {
+        switch (action.type) {
+            case ADD_TODO:
+                return currentState.concat([action.todo]);
+            case REMOVE_TODO:
+                return currentState.filter(todo => todo.id !== action.id);
+            case TOGGLE_TODO:
+                return currentState.map(todo => {
+                    if (todo.id === action.id) {
+                        return Object.assign({}, todo, {complete: !todo.complete});
+                    }
+                    return todo;
+                });
+            default:
+                return currentState;
+        }
+
+    }
+    function goals (currentState = [], action) {
+        switch (action.type) {
+            case ADD_GOAL:
+                return currentState.concat([action.goal]);
+            case REMOVE_GOAL:
+                return currentState.filter(goal => goal.id !== action.id);
+            default:
+                return currentState;
+        }
+    }
+
+    function app(state = {}, action) {
+
+        return {
+            todos: todos(state.todos, action),
+            goals: goals(state.goals, action),
+        }
+    }
+
+    const store = Redux.createStore(app);
+
+    let unSubscribe =  store.subscribe(() => {
+        const {goals, todos} = store.getState();
+        // each time state change, just remove all the previous state and update the hole tree
+        document.getElementById('todos').innerHTML = '';
+        document.getElementById('goals').innerHTML = '';
+
+        // bind click event to ul, just test the: event.target.value VS event.currentTarget.value
+        goals.forEach(addGoalToDom);
+        todos.forEach(addTodoToDom);
+    });
+
+    // DOM code
+
+    function createRemoveButton(onClick) {
+        let btn = document.createElement('button');
+        btn.innerHTML = 'X';
+        btn.addEventListener('click', onClick);
+
+        return btn;
+    }
+
+    function addTodo() {
+        const input = document.getElementById('todo');
+        let inputValue = input.value;
+        input.value = ''; // reset
+        store.dispatch(
+            TODO.add(inputValue)
+        );
+    }
+
+    function addGoal() {
+        const input = document.getElementById('goal');
+        let inputValue = input.value;
+        input.value = ''; // reset
+        store.dispatch(
+            GOAL.add(inputValue)
+        );
+    }
+    
+    function addTodoToDom (todo) {
+        // create dom element
+        let node = document.createElement('li');
+        // assign text value to that element
+        let text = document.createTextNode(todo.name);
+        node.appendChild(text);
+
+        // style the completed todo
+        node.style.textDecoration =   todo.complete === true ? 'line-through' : 'none';
+        // append the element to the ul list
+        document.getElementById('todos').appendChild(node);
+
+        // make remove button
+        let removeTodoBtn = createRemoveButton(function (event) {
+            store.dispatch(TODO.remove(todo.id));
+        });
+        // add remove btn
+        node.appendChild(removeTodoBtn);
+
+        node.addEventListener('click', function (event) {
+            store.dispatch(TODO.toggle(todo.id));
+        })
+    }
+    function addGoalToDom (goal) {
+        // create dom element
+        let node = document.createElement('li');
+        // assign text value to that element
+        let text = document.createTextNode(goal.name);
+        // make remove btn
+        let removeBtn = createRemoveButton(function (event) {
+            store.dispatch(GOAL.remove(goal.id));
+        });
+        node.appendChild(text);
+        node.appendChild(removeBtn);
+
+
+        // style the completed goal
+        node.style.textDecoration =   todo.complete === true ? 'line-through' : 'none';
+
+        // append the element to the ul list
+        document.getElementById('goals').appendChild(node);
+    }
+    
+    document.getElementById('todoBtn').addEventListener('click', addTodo); // bind click listener to button
+    document.getElementById('goalBtn').addEventListener('click', addGoal); // bind click listener to button
+
+
+
+
+</script>
 </body>
 </html>
