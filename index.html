@@ -23,36 +23,6 @@
 
 
 <script>
-//    function createStore(reducer) {
-//        let state;
-//        let listeners = [];
-//
-//        const getState = () => state;
-//
-//        const subscribe = (callback) => {
-//            listeners.push(callback);
-//
-//            return () => {
-//                listeners = listeners.filter(item => item !== callback);
-//            }
-//        };
-
-//        const dispatch = (action) => {
-            // set new state
-//            state = reducer(getState(), action);
-            // trigger callback function for each listener
-//            listeners.forEach(listener => listener(state));
-            // return newState for any purpose
-//            return state;
-//        };
-
-//        return {
-//            subscribe,
-//            dispatch,
-//            getState
-//        }
-//    }
-
     /// API for user
 
     const [ADD_TODO, REMOVE_TODO, TOGGLE_TODO] = ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO'];
@@ -102,6 +72,17 @@
         }
     };
 
+    const checker = (store) => (next) => (action) => {
+        // check if contain the text bitcoin then alert and return nothing;
+        if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf('bitcoin') !== -1) {
+            return alert('no Bitcoint here');
+        }
+        if (action.type === ADD_GOAL && action.goal.name.toLowerCase().indexOf('bitcoin') !== -1) {
+            return alert('no Bitcoint here');
+        }
+        return next(action);
+    };
+
     function todos (currentState = [], action) {
         switch (action.type) {
             case ADD_TODO:
@@ -139,7 +120,7 @@
         }
     }
 
-    const store = Redux.createStore(app);
+    const store = Redux.createStore(app, Redux.applyMiddleware(checker));
 
     let unSubscribe =  store.subscribe(() => {
         const {goals, todos} = store.getState();
@@ -175,9 +156,9 @@
         const input = document.getElementById('goal');
         let inputValue = input.value;
         input.value = ''; // reset
-        store.dispatch(
-            GOAL.add(inputValue)
-        );
+       store.dispatch(
+           GOAL.add(inputValue)
+       );
     }
     
     function addTodoToDom (todo) {
@@ -194,13 +175,17 @@
 
         // make remove button
         let removeTodoBtn = createRemoveButton(function (event) {
-            store.dispatch(TODO.remove(todo.id));
+           store.dispatch(
+               TODO.remove(todo.id)
+           );
         });
         // add remove btn
         node.appendChild(removeTodoBtn);
 
         node.addEventListener('click', function (event) {
-            store.dispatch(TODO.toggle(todo.id));
+           store.dispatch(
+               TODO.toggle(todo.id)
+           );
         })
     }
     function addGoalToDom (goal) {
@@ -210,7 +195,9 @@
         let text = document.createTextNode(goal.name);
         // make remove btn
         let removeBtn = createRemoveButton(function (event) {
-            store.dispatch(GOAL.remove(goal.id));
+           store.dispatch(
+               GOAL.remove(goal.id)
+           );
         });
         node.appendChild(text);
         node.appendChild(removeBtn);
