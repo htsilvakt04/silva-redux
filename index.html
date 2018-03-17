@@ -9,23 +9,14 @@
     <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
 </head>
 <body>
-    <div>
-        <h1>Todo List ?></h1>
-        <input type="text" id="todo" placeholder="Add Todo">
-        <button id="todoBtn">Add Todo</button>
-        <ul id="todos"></ul>
-    </div>
-    <hr>
-    <div>
-        <h1>Goals ?></h1>
-        <input type="text" id="goal" placeholder="Add Goal">
-        <button id="goalBtn">Add Goal</button>
-        <ul id="goals"></ul>
-    </div>
 
-
+    <div id="root"></div>
 
 <script>
+    /*-----------------------------  REACT CODE  ------------------------------------------------------*/
+
+
+
     /// API for user
 
     const [ADD_TODO, REMOVE_TODO, TOGGLE_TODO] = ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO'];
@@ -133,100 +124,117 @@
 
     const store = Redux.createStore(app, Redux.applyMiddleware(checker, logger));
 
-    let unSubscribe =  store.subscribe(() => {
-        const {goals, todos} = store.getState();
-        // each time state change, just remove all the previous state and update the hole tree
-        document.getElementById('todos').innerHTML = '';
-        document.getElementById('goals').innerHTML = '';
 
-        // bind click event to ul, just test the: event.target.value VS event.currentTarget.value
-        goals.forEach(addGoalToDom);
-        todos.forEach(addTodoToDom);
-    });
 
-    // DOM code
+</script>
 
-    function createRemoveButton(onClick) {
-        let btn = document.createElement('button');
-        btn.innerHTML = 'X';
-        btn.addEventListener('click', onClick);
-
-        return btn;
-    }
-
-    function addTodo() {
-        const input = document.getElementById('todo');
-        let inputValue = input.value;
-        input.value = ''; // reset
-        store.dispatch(
-            TODO.add(inputValue)
+<script type="text/babel">
+    function ListItem(props) {
+        let item = props.item;
+        return (
+            <li>
+                {props.children}
+                <button onClick={props.onClick.bind(null, item.id)}>X</button>
+            </li>
         );
     }
 
-    function addGoal() {
-        const input = document.getElementById('goal');
-        let inputValue = input.value;
-        input.value = ''; // reset
-       store.dispatch(
-           GOAL.add(inputValue)
-       );
+    class Todos extends React.Component {
+        addTodo (event) {
+            event.preventDefault();
+            const name = this.input.value;
+            this.input.value = '';
+
+            this.props.store.dispatch(
+                TODO.add(name)
+            )
+        }
+
+        removeTodo (id) {
+            this.props.store.dispatch(
+                TODO.remove(id)
+            )
+        }
+        toggleTodo = (id) => {
+            this.props.store.dispatch(
+                TODO.toggle(id)
+            )
+        }
+        render () {
+            return (
+                    <div>
+                        <h1>Todo List ?></h1>
+                        <input type="text" placeholder="Add Todo" ref={(input) => this.input = input}/>
+                        <button onClick={(event) => this.addTodo(event)}>Add Todo</button>
+                        <ul className="todos">
+                            {this.props.todos.map( (todo, index) => {
+                                return (
+                                    <ListItem onClick={(id) => this.removeTodo(id)} key={index} item={todo}>
+                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"text-decoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
+                                    </ListItem>
+                                );
+                            })}
+                        </ul>
+                    </div>
+            )
+        }
+
     }
-    
-    function addTodoToDom (todo) {
-        // create dom element
-        let node = document.createElement('li');
-        // assign text value to that element
-        let text = document.createTextNode(todo.name);
-        node.appendChild(text);
+    class Goals extends React.Component{
+        addGoal = (event) => {
+            event.preventDefault();
+            let goal = this.input.value;
+            this.input.value = '';
 
-        // style the completed todo
-        node.style.textDecoration =   todo.complete === true ? 'line-through' : 'none';
-        // append the element to the ul list
-        document.getElementById('todos').appendChild(node);
-
-        // make remove button
-        let removeTodoBtn = createRemoveButton(function (event) {
-           store.dispatch(
-               TODO.remove(todo.id)
-           );
-        });
-        // add remove btn
-        node.appendChild(removeTodoBtn);
-
-        node.addEventListener('click', function (event) {
-           store.dispatch(
-               TODO.toggle(todo.id)
-           );
-        })
+            this.props.store.dispatch(
+                GOAL.add(goal)
+            )
+        }
+        removeGoal = (id) => {
+            this.props.store.dispatch(
+                GOAL.remove(id)
+            )
+        }
+        render () {
+            return (
+                    <div>
+                        <h1>Goals ?></h1>
+                        <input type="text" placeholder="Add Goal" ref={(input) => this.input = input}/>
+                        <button onClick={this.addGoal}>Add Goal</button>
+                        <ul className="goals">
+                            {this.props.goals.map( (goal, index) => {
+                                return (
+                                    <ListItem onClick={this.removeGoal} key={index} item={goal}>
+                                        <span>{goal.name}</span>
+                                    </ListItem>
+                                );
+                            })}
+                        </ul>
+                    </div>
+            )
+        }
     }
-    function addGoalToDom (goal) {
-        // create dom element
-        let node = document.createElement('li');
-        // assign text value to that element
-        let text = document.createTextNode(goal.name);
-        // make remove btn
-        let removeBtn = createRemoveButton(function (event) {
-           store.dispatch(
-               GOAL.remove(goal.id)
-           );
-        });
-        node.appendChild(text);
-        node.appendChild(removeBtn);
+    class App extends React.Component {
+        componentDidMount () {
+            const {store} = this.props;
 
+            store.subscribe(() => this.forceUpdate());
+        }
+        render () {
+            let {todos, goals} = this.props.store.getState();
+            const { store } = this.props;
 
-        // style the completed goal
-        node.style.textDecoration =   todo.complete === true ? 'line-through' : 'none';
-
-        // append the element to the ul list
-        document.getElementById('goals').appendChild(node);
+            return (
+                <div>
+                    <Todos todos={todos} store={store}/>
+                    <Goals goals={goals} store={store}/>
+                </div>
+            )
+        }
     }
-    
-    document.getElementById('todoBtn').addEventListener('click', addTodo); // bind click listener to button
-    document.getElementById('goalBtn').addEventListener('click', addGoal); // bind click listener to button
 
 
-
-
+    ReactDOM.render(<App store={store}/>, document.getElementById('root'));
 </script>
 </body>
 </html>
