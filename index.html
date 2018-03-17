@@ -83,6 +83,14 @@
         return next(action);
     };
 
+    const logger = (store) => (next) => (action) => {
+        console.group(action.type);
+        console.log('Current Action is: ', action);
+        next(action);
+        console.log('The new State is: ', store.getState());
+        console.groupEnd();
+    };
+
     function todos (currentState = [], action) {
         switch (action.type) {
             case ADD_TODO:
@@ -120,7 +128,7 @@
         }
     }
 
-    const store = Redux.createStore(app, Redux.applyMiddleware(checker));
+    const store = Redux.createStore(app, Redux.applyMiddleware(checker, logger));
 
     let unSubscribe =  store.subscribe(() => {
         const {goals, todos} = store.getState();
