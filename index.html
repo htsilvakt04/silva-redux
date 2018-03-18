@@ -7,6 +7,7 @@
     <script src='https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js'></script>
     <script src='https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js'></script>
     <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
+    <script src='https://tylermcginnis.com/goals-todos-api/index.js'></script>
 </head>
 <body>
 
@@ -16,21 +17,23 @@
     /*-----------------------------  REACT CODE  ------------------------------------------------------*/
 
 
-
+    function generateId () {
+        return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
+    }
     /// API for user
 
     const [ADD_TODO, REMOVE_TODO, TOGGLE_TODO] = ['ADD_TODO', 'REMOVE_TODO', 'TOGGLE_TODO'];
     const [ADD_GOAL, REMOVE_GOAL] = ['ADD_GOAL', 'REMOVE_GOAL'];
+    const RECEIVE_DATA = 'RECEIVE_DATA';
 
     const TODO = {
-        todoId: 0,
-        add: (title) => {
+        add: (todo) => {
             return {
                 type: ADD_TODO,
                 todo: {
-                    id: ++TODO.todoId,
-                    name: title,
-                    complete: false,
+                    id: todo.id,
+                    name: todo.name,
+                    complete: todo.complete,
                 }
             }
         },
@@ -48,13 +51,12 @@
         }
     };
     const GOAL = {
-        goalId : 0,
-        add: (title) => {
+        add: (goal) => {
             return {
                 type: ADD_GOAL,
                 goal: {
-                    id: ++GOAL.goalId,
-                    name: title
+                    id: goal.id,
+                    name: goal.name
                 }
             }
         },
@@ -65,7 +67,13 @@
             }
         }
     };
-
+    function receiveDataAction(todos, goals) {
+        return {
+            type: RECEIVE_DATA,
+            todos,
+            goals
+        }
+    }
     const checker = (store) => (next) => (action) => {
         // check if contain the text bitcoin then alert and return nothing;
         if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf('bitcoin') !== -1) {
@@ -98,6 +106,8 @@
                     }
                     return todo;
                 });
+            case RECEIVE_DATA:
+                return action.todos;
             default:
                 return currentState;
         }
@@ -109,6 +119,8 @@
                 return currentState.concat([action.goal]);
             case REMOVE_GOAL:
                 return currentState.filter(goal => goal.id !== action.id);
+            case RECEIVE_DATA:
+                return action.goals;
             default:
                 return currentState;
         }
@@ -146,7 +158,11 @@
             this.input.value = '';
 
             this.props.store.dispatch(
-                TODO.add(name)
+                TODO.add({
+                    id: generateId(),
+                    name,
+                    complete: false
+                })
             )
         }
 
@@ -170,7 +186,7 @@
                             {this.props.todos.map( (todo, index) => {
                                 return (
                                     <ListItem onClick={(id) => this.removeTodo(id)} key={index} item={todo}>
-                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"text-decoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
+                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
                                     </ListItem>
                                 );
                             })}
@@ -183,11 +199,14 @@
     class Goals extends React.Component{
         addGoal = (event) => {
             event.preventDefault();
-            let goal = this.input.value;
+            let name = this.input.value;
             this.input.value = '';
 
             this.props.store.dispatch(
-                GOAL.add(goal)
+                GOAL.add({
+                    name,
+                    id: generateId()
+                })
             )
         }
         removeGoal = (id) => {
@@ -217,6 +236,17 @@
     class App extends React.Component {
         componentDidMount () {
             const {store} = this.props;
+
+            Promise.all([
+                API.fetchTodos(),
+                API.fetchGoals()
+            ]).then(([todos, goals]) => {
+                store.dispatch(
+                    receiveDataAction(todos, goals)
+                );
+            }).catch(err => {
+                console.log(err);
+            });
 
             store.subscribe(() => this.forceUpdate());
         }
