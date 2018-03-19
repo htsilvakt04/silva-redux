@@ -16,7 +16,6 @@
 <script>
     /*-----------------------------  REACT CODE  ------------------------------------------------------*/
 
-
     function generateId () {
         return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
     }
@@ -92,7 +91,16 @@
         console.log('The new State is: ', store.getState());
         console.groupEnd();
     };
-
+    
+    function loading(state = true, action) {
+        switch (action.type) {
+            case RECEIVE_DATA:
+                return false;
+            default:
+                return state;
+        }
+    }
+    
     function todos (currentState = [], action) {
         switch (action.type) {
             case ADD_TODO:
@@ -131,6 +139,7 @@
         return {
             todos: todos(state.todos, action),
             goals: goals(state.goals, action),
+            loading: loading(state.loading, action)
         }
     }
 
@@ -141,17 +150,47 @@
 </script>
 
 <script type="text/babel">
+    class Loading extends React.Component {
+        state = {
+            label: this.props.label
+        }
+
+        componentDidMount () {
+            const { label, intervalTime } = this.props;
+            let stopper = label + '...';
+
+            this.interval = setInterval(() => {
+                this.state.label === stopper
+                    ? this.setState(() => ({label}))
+                    : this.setState( prevState  => ({label: prevState.label + '.'}) )
+            }, intervalTime);
+        }
+
+        componentWillUnmount () {
+            clearInterval(this.interval);
+        }
+
+        render () {
+            return (
+                    <p className='loading-label' style={this.props.style}>{this.state.label}</p>
+            )
+        }
+    }
+
     function ListItem(props) {
         let item = props.item;
         return (
             <li>
                 {props.children}
-                <button onClick={props.onClick.bind(null, item.id)}>X</button>
+                <button onClick={props.onClick.bind(null, item)}>X</button>
             </li>
         );
     }
 
     class Todos extends React.Component {
+        state = {
+            loading: true
+        }
         addTodo (event) {
             event.preventDefault();
             const name = this.input.value;
@@ -165,11 +204,25 @@
                 })
             )
         }
+        componentWillReceiveProps(nextProps) {
+            const currentLength = this.props.todos.length;
+            const nextLength = nextProps.todos.length;
 
-        removeTodo (id) {
+            if (currentLength !== nextLength) {
+                this.setState({
+                    loading: false
+                })
+            }
+        }
+        removeTodo (todo) {
             this.props.store.dispatch(
-                TODO.remove(id)
-            )
+                TODO.remove(todo.id)
+            );
+
+            API.deleteTodo(todo.id).catch( err => {
+                store.dispatch(TODO.add(todo));
+                alert('Opps, there were some errors');
+            });
         }
         toggleTodo = (id) => {
             this.props.store.dispatch(
@@ -179,24 +232,41 @@
         render () {
             return (
                     <div>
-                        <h1>Todo List ?></h1>
-                        <input type="text" placeholder="Add Todo" ref={(input) => this.input = input}/>
-                        <button onClick={(event) => this.addTodo(event)}>Add Todo</button>
-                        <ul className="todos">
-                            {this.props.todos.map( (todo, index) => {
-                                return (
-                                    <ListItem onClick={(id) => this.removeTodo(id)} key={index} item={todo}>
-                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
-                                    </ListItem>
-                                );
-                            })}
-                        </ul>
+                        {this.state.loading
+                            ? <Loading label="Loading" style={{color: 'salmon'}} intervalTime="200"/>
+                            : <div>
+                                    <h1>Todo List ?></h1>
+                                    <input type="text" placeholder="Add Todo" ref={(input) => this.input = input}/>
+                                    <button onClick={(event) => this.addTodo(event)}>Add Todo</button>
+                                    <ul className="todos">
+                                        {this.props.todos.map( (todo, index) => {
+                                            return (
+                                                    <ListItem onClick={(todo) => this.removeTodo(todo)} key={index} item={todo}>
+                                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
+                                                    </ListItem>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>}
                     </div>
             )
         }
 
     }
-    class Goals extends React.Component{
+    class Goals extends React.Component {
+        state = {
+            loading: true
+        }
+        componentWillReceiveProps(nextProps) {
+            const currentLength = this.props.goals.length;
+            const nextLength = nextProps.goals.length;
+
+            if (currentLength !== nextLength) {
+                this.setState({
+                    loading: false
+                })
+            }
+        }
         addGoal = (event) => {
             event.preventDefault();
             let name = this.input.value;
@@ -209,26 +279,36 @@
                 })
             )
         }
-        removeGoal = (id) => {
+        removeGoal = (goal) => {
             this.props.store.dispatch(
-                GOAL.remove(id)
-            )
+                GOAL.remove(goal.id)
+            );
+
+            API.deleteGoal(goal.id).catch( err => {
+                store.dispatch(GOAL.add(goal));
+                alert('Opps, there were some errros');
+            });
         }
         render () {
             return (
                     <div>
-                        <h1>Goals ?></h1>
-                        <input type="text" placeholder="Add Goal" ref={(input) => this.input = input}/>
-                        <button onClick={this.addGoal}>Add Goal</button>
-                        <ul className="goals">
-                            {this.props.goals.map( (goal, index) => {
-                                return (
-                                    <ListItem onClick={this.removeGoal} key={index} item={goal}>
-                                        <span>{goal.name}</span>
-                                    </ListItem>
-                                );
-                            })}
-                        </ul>
+                        {this.state.loading
+                            ? <Loading label="Loading" style={{color: 'salmon'}} intervalTime="250"/>
+                            : <div>
+                                    <h1>Goals ?></h1>
+                                    <input type="text" placeholder="Add Goal" ref={(input) => this.input = input}/>
+                                    <button onClick={this.addGoal}>Add Goal</button>
+                                    <ul className="goals">
+                                        {this.props.goals.map( (goal, index) => {
+                                            return (
+                                                    <ListItem onClick={this.removeGoal} key={index} item={goal}>
+                                                        <span>{goal.name}</span>
+                                                    </ListItem>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                        }
                     </div>
             )
         }
@@ -251,9 +331,9 @@
             store.subscribe(() => this.forceUpdate());
         }
         render () {
-            let {todos, goals} = this.props.store.getState();
+            let {todos, goals, loading} = this.props.store.getState();
             const { store } = this.props;
-
+            // if (loading) return <Loading/>
             return (
                 <div>
                     <Todos todos={todos} store={store}/>
