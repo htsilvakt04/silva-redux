@@ -73,6 +73,72 @@
             goals
         }
     }
+    function handleRemoveTodo(todo) {
+        return (dispatch) => {
+            dispatch(
+                TODO.remove(todo.id)
+            );
+            return API.deleteTodo(todo.id).catch( err => {
+                dispatch(
+                    TODO.add(todo)
+                );
+                alert('Opps, there were some errors');
+            });
+        }
+    }
+
+    function handleAddTodo() {
+        return (dispatch) => {
+            return API.saveTodo(this.input.value).then(todo => {
+                this.input.value = '';
+                dispatch(
+                    TODO.add(todo)
+                );
+            }).catch(() => {
+                alert('Opps, there werer some errs, try again please');
+            })
+        }
+    }
+    function handleToggleTodo({id}) {
+        return (dispatch) => {
+            dispatch(
+                TODO.toggle(id)
+            );
+            API.saveTodoToggle(id).catch( err => {
+                dispatch(
+                    TODO.toggle(id)
+                );
+                alert('Opps, try again please');
+            });
+        }
+    }
+
+    function handleRemoveGoal(goal) {
+        return (dispatch) => {
+            dispatch(
+                GOAL.remove(goal.id)
+            );
+
+            API.deleteGoal(goal.id).catch( err => {
+                dispatch(GOAL.add(goal));
+                alert('Opps, there were some errros');
+            });
+        }
+    }
+    function handleAddGoal() {
+        let goal = this.input.value;
+        return (dispatch) => {
+            return API.saveGoal(goal).then(newGoal => {
+                this.input.value = '';
+                dispatch(
+                    GOAL.add(newGoal)
+                );
+            }).catch(() => {
+                alert('Opps, there were some errs, try again please');
+            });
+        }
+
+    }
     const checker = (store) => (next) => (action) => {
         // check if contain the text bitcoin then alert and return nothing;
         if (action.type === ADD_TODO && action.todo.name.toLowerCase().indexOf('bitcoin') !== -1) {
@@ -100,7 +166,15 @@
                 return state;
         }
     }
-    
+
+    const thunk  = (store) => (next) => (action) => {
+        if (typeof action !== "function") {
+            return next(action);
+        }
+
+        return action(store.dispatch);
+    };
+
     function todos (currentState = [], action) {
         switch (action.type) {
             case ADD_TODO:
@@ -143,7 +217,7 @@
         }
     }
 
-    const store = Redux.createStore(app, Redux.applyMiddleware(checker, logger));
+    const store = Redux.createStore(app, Redux.applyMiddleware(thunk, checker, logger));
 
 
 
@@ -193,16 +267,10 @@
         }
         addTodo (event) {
             event.preventDefault();
-            const name = this.input.value;
-            this.input.value = '';
-
             this.props.store.dispatch(
-                TODO.add({
-                    id: generateId(),
-                    name,
-                    complete: false
-                })
-            )
+                handleAddTodo.call(this)
+            );
+
         }
         componentWillReceiveProps(nextProps) {
             const currentLength = this.props.todos.length;
@@ -216,18 +284,14 @@
         }
         removeTodo (todo) {
             this.props.store.dispatch(
-                TODO.remove(todo.id)
+                handleRemoveTodo(todo)
             );
-
-            API.deleteTodo(todo.id).catch( err => {
-                store.dispatch(TODO.add(todo));
-                alert('Opps, there were some errors');
-            });
         }
-        toggleTodo = (id) => {
+
+        toggleTodo = (todo) => {
             this.props.store.dispatch(
-                TODO.toggle(id)
-            )
+                handleToggleTodo(todo)
+            );
         }
         render () {
             return (
@@ -242,7 +306,7 @@
                                         {this.props.todos.map( (todo, index) => {
                                             return (
                                                     <ListItem onClick={(todo) => this.removeTodo(todo)} key={index} item={todo}>
-                                                        <span onClick={this.toggleTodo.bind(null, todo.id)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
+                                                        <span onClick={this.toggleTodo.bind(null, todo)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
                                                     </ListItem>
                                             );
                                         })}
@@ -269,25 +333,15 @@
         }
         addGoal = (event) => {
             event.preventDefault();
-            let name = this.input.value;
-            this.input.value = '';
-
             this.props.store.dispatch(
-                GOAL.add({
-                    name,
-                    id: generateId()
-                })
+                handleAddGoal.call(this)
             )
+
         }
         removeGoal = (goal) => {
             this.props.store.dispatch(
-                GOAL.remove(goal.id)
-            );
-
-            API.deleteGoal(goal.id).catch( err => {
-                store.dispatch(GOAL.add(goal));
-                alert('Opps, there were some errros');
-            });
+                handleRemoveGoal(goal)
+            )
         }
         render () {
             return (
