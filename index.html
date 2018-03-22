@@ -8,6 +8,7 @@
     <script src='https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js'></script>
     <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
     <script src='https://tylermcginnis.com/goals-todos-api/index.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux-thunk/2.2.0/redux-thunk.min.js"></script>
 </head>
 <body>
 
@@ -112,6 +113,20 @@
             });
         }
     }
+    function handleReceiveData() {
+        return (dispatch) => {
+            return Promise.all([
+                API.fetchTodos(),
+                API.fetchGoals()
+            ]).then(([todos, goals]) => {
+                dispatch(
+                    receiveDataAction(todos, goals)
+                );
+            }).catch(err => {
+                console.log(err);
+            });
+        }
+    }
 
     function handleRemoveGoal(goal) {
         return (dispatch) => {
@@ -167,13 +182,13 @@
         }
     }
 
-    const thunk  = (store) => (next) => (action) => {
-        if (typeof action !== "function") {
-            return next(action);
-        }
-
-        return action(store.dispatch);
-    };
+//    const thunk  = (store) => (next) => (action) => {
+//        if (typeof action !== "function") {
+//            return next(action);
+//        }
+//
+//        return action(store.dispatch);
+//    };
 
     function todos (currentState = [], action) {
         switch (action.type) {
@@ -217,7 +232,7 @@
         }
     }
 
-    const store = Redux.createStore(app, Redux.applyMiddleware(thunk, checker, logger));
+    const store = Redux.createStore(app, Redux.applyMiddleware(ReduxThunk.default, checker, logger));
 
 
 
@@ -262,12 +277,13 @@
     }
 
     class Todos extends React.Component {
+
         state = {
             loading: true
         }
         addTodo (event) {
             event.preventDefault();
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleAddTodo.call(this)
             );
 
@@ -282,14 +298,15 @@
                 })
             }
         }
+
         removeTodo (todo) {
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleRemoveTodo(todo)
             );
         }
 
         toggleTodo = (todo) => {
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleToggleTodo(todo)
             );
         }
@@ -333,13 +350,13 @@
         }
         addGoal = (event) => {
             event.preventDefault();
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleAddGoal.call(this)
             )
 
         }
         removeGoal = (goal) => {
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleRemoveGoal(goal)
             )
         }
@@ -367,31 +384,37 @@
             )
         }
     }
+
+    const Context = React.createContext();
+
+    class Provider extends React.Component {
+        render () {
+            return (
+                <div>
+                    <Context.Provider value={store}>
+                        {this.props.children}
+                    </Context.Provider>
+                </div>
+            )
+        }
+    }
+
     class App extends React.Component {
         componentDidMount () {
-            const {store} = this.props;
-
-            Promise.all([
-                API.fetchTodos(),
-                API.fetchGoals()
-            ]).then(([todos, goals]) => {
-                store.dispatch(
-                    receiveDataAction(todos, goals)
-                );
-            }).catch(err => {
-                console.log(err);
-            });
+            this.props.store.dispatch(
+                handleReceiveData()
+            );
 
             store.subscribe(() => this.forceUpdate());
         }
         render () {
             let {todos, goals, loading} = this.props.store.getState();
-            const { store } = this.props;
+            const { dispatch } = this.props.store;
             // if (loading) return <Loading/>
             return (
                 <div>
-                    <Todos todos={todos} store={store}/>
-                    <Goals goals={goals} store={store}/>
+                    <Todos todos={todos} dispatch={dispatch}/>
+                    <Goals goals={goals} dispatch={dispatch}/>
                 </div>
             )
         }
