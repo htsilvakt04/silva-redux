@@ -9,6 +9,7 @@
     <script src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js'></script>
     <script src='https://tylermcginnis.com/goals-todos-api/index.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/redux-thunk/2.2.0/redux-thunk.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-redux/5.0.7/react-redux.min.js"></script>
 </head>
 <body>
 
@@ -350,42 +351,30 @@
         }
     }
 
-    const Context = React.createContext();
-
-    class Provider extends React.Component {
-        render () {
-            return (
-                <div>
-                    <Context.Provider value={store}>
-                        {this.props.children}
-                    </Context.Provider>
-                </div>
-            )
-        }
-    }
-    const ConnectedApp = connect((state) => ({
-        loading: state.loading
-    }))(App);
-
-    const ConnectedTodos = connect((state) => ({
-        todos: state.todos
-    }))(Todos);
-
-    const ConnectedGoals = connect((state) => ({
-        goals: state.goals
-    }))(Goals);
+//    const Context = React.createContext();
+//
+//    class Provider extends React.Component {
+//        render () {
+//            return (
+//                <div>
+//                    <Context.Provider value={this.props.store}>
+//                        {this.props.children}
+//                    </Context.Provider>
+//                </div>
+//            )
+//        }
+//    }
 
     class App extends React.Component {
         componentDidMount () {
-            this.props.store.dispatch(
+            this.props.dispatch(
                 handleReceiveData()
             );
 
-            this.props.store.subscribe(() => this.forceUpdate());
+//            this.props.store.subscribe(() => this.forceUpdate()); // we'll move this function to the connect itself
         }
         render () {
-            let {loading} = this.props.store.getState();
-            if (loading) {
+            if (this.props.loading) {
                 return <Loading label="Loading" intervalTime="200"/>
             }
 
@@ -397,11 +386,54 @@
             )
         }
     }
+//    function connect(stateDes) {
+//        return (Component) => {
+//            class Receiver extends React.Component {
+//                componentDidMount () {
+//                    const { subscribe } = this.props.store;
+//                    this.unsub = subscribe(() => this.forceUpdate());
+//                }
+//                componentWillUnMount () {
+//                    this.unsub();
+//                }
+//                render () {
+//                    let {dispatch} = this.props.store;
+//                    let appState = this.props.store.getState();
+//                    let neededState = stateDes(appState);
+//
+//                    return <Component dispatch={dispatch} {...neededState}/>;
+//                }
+//
+//            }
+//            class ConnectedComponent extends React.Component {
+//                render () {
+//                    return (
+//                            <Context.Consumer>
+//                                {(store) => {
+//                                    return <Receiver store={store} />;
+//                                }}
+//                            </Context.Consumer>
+//                    )
+//                }
+//            }
+//            return ConnectedComponent;
+//        }
+//    }
+    const ConnectedApp = ReactRedux.connect((state) => ({
+        loading: state.loading
+    }))(App);
+    const ConnectedTodos = ReactRedux.connect((state) => ({
+        todos: state.todos
+    }))(Todos);
+
+    const ConnectedGoals = ReactRedux.connect((state) => ({
+        goals: state.goals
+    }))(Goals);
 
     ReactDOM.render(
-        <Provider store={store}>
+        <ReactRedux.Provider store={store}>
             <ConnectedApp />
-        </Provider>, document.getElementById('root'));
+        </ReactRedux.Provider>, document.getElementById('root'));
 </script>
 </body>
 </html>
