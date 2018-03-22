@@ -277,26 +277,12 @@
     }
 
     class Todos extends React.Component {
-
-        state = {
-            loading: true
-        }
         addTodo (event) {
             event.preventDefault();
             this.props.dispatch(
                 handleAddTodo.call(this)
             );
 
-        }
-        componentWillReceiveProps(nextProps) {
-            const currentLength = this.props.todos.length;
-            const nextLength = nextProps.todos.length;
-
-            if (currentLength !== nextLength) {
-                this.setState({
-                    loading: false
-                })
-            }
         }
 
         removeTodo (todo) {
@@ -312,42 +298,26 @@
         }
         render () {
             return (
-                    <div>
-                        {this.state.loading
-                            ? <Loading label="Loading" style={{color: 'salmon'}} intervalTime="200"/>
-                            : <div>
-                                    <h1>Todo List ?></h1>
-                                    <input type="text" placeholder="Add Todo" ref={(input) => this.input = input}/>
-                                    <button onClick={(event) => this.addTodo(event)}>Add Todo</button>
-                                    <ul className="todos">
-                                        {this.props.todos.map( (todo, index) => {
-                                            return (
-                                                    <ListItem onClick={(todo) => this.removeTodo(todo)} key={index} item={todo}>
-                                                        <span onClick={this.toggleTodo.bind(null, todo)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
-                                                    </ListItem>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>}
-                    </div>
+                <div>
+                    <h1>Todo List ?></h1>
+                    <input type="text" placeholder="Add Todo" ref={(input) => this.input = input}/>
+                    <button onClick={(event) => this.addTodo(event)}>Add Todo</button>
+                    <ul className="todos">
+                        {this.props.todos.map( (todo, index) => {
+                            return (
+                                    <ListItem onClick={(todo) => this.removeTodo(todo)} key={index} item={todo}>
+                                        <span onClick={this.toggleTodo.bind(null, todo)} style={{"textDecoration": todo.complete ? "line-through" : 'none'}}>{todo.name}</span>
+                                    </ListItem>
+                            );
+                        })}
+                    </ul>
+                </div>
             )
         }
 
     }
     class Goals extends React.Component {
-        state = {
-            loading: true
-        }
-        componentWillReceiveProps(nextProps) {
-            const currentLength = this.props.goals.length;
-            const nextLength = nextProps.goals.length;
 
-            if (currentLength !== nextLength) {
-                this.setState({
-                    loading: false
-                })
-            }
-        }
         addGoal = (event) => {
             event.preventDefault();
             this.props.dispatch(
@@ -362,25 +332,20 @@
         }
         render () {
             return (
-                    <div>
-                        {this.state.loading
-                            ? <Loading label="Loading" style={{color: 'salmon'}} intervalTime="250"/>
-                            : <div>
-                                    <h1>Goals ?></h1>
-                                    <input type="text" placeholder="Add Goal" ref={(input) => this.input = input}/>
-                                    <button onClick={this.addGoal}>Add Goal</button>
-                                    <ul className="goals">
-                                        {this.props.goals.map( (goal, index) => {
-                                            return (
-                                                    <ListItem onClick={this.removeGoal} key={index} item={goal}>
-                                                        <span>{goal.name}</span>
-                                                    </ListItem>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>
-                        }
-                    </div>
+                 <div>
+                    <h1>Goals ?></h1>
+                    <input type="text" placeholder="Add Goal" ref={(input) => this.input = input}/>
+                    <button onClick={this.addGoal}>Add Goal</button>
+                    <ul className="goals">
+                        {this.props.goals.map( (goal, index) => {
+                            return (
+                                    <ListItem onClick={this.removeGoal} key={index} item={goal}>
+                                        <span>{goal.name}</span>
+                                    </ListItem>
+                            );
+                        })}
+                    </ul>
+                </div>
             )
         }
     }
@@ -398,30 +363,71 @@
             )
         }
     }
-
+//    const ConnectedApp = connect((state) => ({
+//        loading: state.loading
+//    }))(App);
+    class ConnectedApp extends React.Component{
+        render () {
+            return (
+                    <Context.Consumer>
+                        {(store) => {
+                            return <App store={store}/>;
+                        }}
+                    </Context.Consumer>
+            )
+        }
+    }
+    class ConnectedTodos extends React.Component {
+        render () {
+            return (
+                    <Context.Consumer>
+                        {(store) => {
+                            const todos = store.getState().todos;
+                            return <Todos dispatch={store.dispatch} todos={todos}/>;
+                        }}
+                    </Context.Consumer>
+            )
+        }
+    }
+    class ConnectedGoals extends React.Component {
+        render () {
+            return (
+                    <Context.Consumer>
+                        {(store) => {
+                            const goals = store.getState().goals;
+                            return <Goals dispatch={store.dispatch} goals={goals}/>;
+                        }}
+                    </Context.Consumer>
+            )
+        }
+    }
     class App extends React.Component {
         componentDidMount () {
             this.props.store.dispatch(
                 handleReceiveData()
             );
 
-            store.subscribe(() => this.forceUpdate());
+            this.props.store.subscribe(() => this.forceUpdate());
         }
         render () {
-            let {todos, goals, loading} = this.props.store.getState();
-            const { dispatch } = this.props.store;
-            // if (loading) return <Loading/>
+            let {loading} = this.props.store.getState();
+            if (loading) {
+                return <Loading label="Loading" intervalTime="200"/>
+            }
+
             return (
                 <div>
-                    <Todos todos={todos} dispatch={dispatch}/>
-                    <Goals goals={goals} dispatch={dispatch}/>
+                    <ConnectedTodos/>
+                    <ConnectedGoals/>
                 </div>
             )
         }
     }
 
-
-    ReactDOM.render(<App store={store}/>, document.getElementById('root'));
+    ReactDOM.render(
+        <Provider store={store}>
+            <ConnectedApp />
+        </Provider>, document.getElementById('root'));
 </script>
 </body>
 </html>
